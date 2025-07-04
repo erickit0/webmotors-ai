@@ -1115,9 +1115,48 @@ if __name__ == '__main__':
     print(f"🤖 Modelo Gemini ativo (inicial): {webmotors_ai.get_current_model_name()}")
     print("=" * 100 + "\n")
     
+    if __name__ == '__main__':
+    print("\n" + "=" * 100)
+    print("🚗 Webmotors AI Assistant - VERSÃO 6.0 FINAL CONSOLIDADO")
+    print("🚀 SISTEMA INICIANDO COM TODAS AS FUNCIONALIDADES (BUSCA REAL, IA, DOCUMENTOS, IMAGENS)!")
+    print("=" * 100)
+    print()
+    print("✅ FUNCIONALIDADES ATIVAS:")
+    print(" • 🌐 BUSCA REAL NA INTERNET (Google Search)")
+    print(" • 🚗 BUSCA NO SITE WEBMOTORS (Acesso Direto)")
+    print(" • 📄 PROCESSAMENTO DE DOCUMENTOS (Excel, PowerPoint, PDF, CSV, TXT)")
+    print(" • 🎨 GERAÇÃO DE IMAGENS IA (Hugging Face FLUX, Stable Diffusion, Pollinations)")
+    print(" • 🤖 MÚLTIPLOS MODELOS GEMINI (com fallback automático)")
+    print(" • 💬 HISTÓRICO DE CONVERSA POR USUÁRIO")
+    print(" • 🛡️ RESILIÊNCIA A FALHAS DE API (troca de modelo)")
+    print()
+    print("🔧 ENDPOINTS DISPONÍVEIS:")
+    print(" • POST /chat               - Chat unificado (com 'search_mode' no body)")
+    print(" • POST /chat/general       - Chat para perguntas gerais (busca real)")
+    print(" • POST /chat/webmotors     - Chat para perguntas sobre Webmotors (busca no site)")
+    print(" • POST /generate-image     - Geração de imagens IA (com '/gerar-imagem' no chat)")
+    print(" • POST /upload-document    - Upload e processamento de documentos")
+    print(" • GET /list-documents      - Listar documentos carregados")
+    print(" • GET /health              - Status detalhado do sistema")
+    print()
+    print("🧪 EXEMPLOS DE TESTE:")
+    print(" • 'Que dia é hoje?' (no /chat/general)")
+    print(" • 'Como está o clima em São Paulo?' (no /chat/general)")
+    print(" • 'Quais os canais de atendimento da Webmotors?' (no /chat/webmotors)")
+    print(" • '/gerar-imagem cachorro na lua' (no /chat ou /generate-image)")
+    print(" • Upload de um .xlsx e depois 'Qual o total de vendas do Q1?' (no /chat com search_mode='documents')")
+    print()
+    print("=" * 100)
+    print(f"🔗 API disponível em: http://{Config.HOST}:{Config.PORT}")
+    print(f"🔍 Modo DEBUG do Flask: {'ATIVO' if Config.FLASK_DEBUG else 'INATIVO'}")
+    print(f"📄 Documentos carregados na inicialização: {len(webmotors_ai.loaded_documents)}")
+    print(f"🤖 Modelo Gemini ativo (inicial): {webmotors_ai.get_current_model_name()}")
+    print("=" * 100 + "\n")
+    
+    # CORREÇÃO ESPECÍFICA PARA RENDER
+    port = int(os.environ.get('PORT', Config.PORT))
     app.run(
-        debug=Config.FLASK_DEBUG,
-        host=Config.HOST,
-        port=Config.PORT,
-        threaded=True
+        host='0.0.0.0',
+        port=port,
+        debug=False  # IMPORTANTE: False em produção
     )

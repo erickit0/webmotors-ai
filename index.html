@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webmotors AI - Assistente Inteligente</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            background: linear-gradient(135deg, #E52E2E 0%, #C41E1E 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(229, 46, 46, 0.3);
+        }
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #E52E2E 0%, #8B0000 50%, #2C2C2C 100%);
+        }
+        .message-img {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .message-img:hover {
+            transform: scale(1.02);
+        }
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            cursor: pointer;
+        }
+        .image-modal img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #E52E2E;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-indicator:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <div class="bg-white rounded-t-2xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-car text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Webmotors AI</h1>
+                        <p class="text-gray-600">Assistente Inteligente Multi-Funcional</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="status-indicator w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span class="text-sm text-gray-600" id="connection-status">Conectado</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white border-t border-gray-200">
+            <div class="flex flex-wrap justify-center space-x-2 p-4">
+                <button class="tab-button active px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gray-100 hover:bg-gray-200" 
+                        data-tab="general">
+                    <i class="fas fa-globe text-blue-500"></i>
+                    <span>Pesquisa Geral</span>
+                </button>
+                <button class="tab-button px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gray-100 hover:bg-gray-200" 
+                        data-tab="webmotors">
+                    <i class="fas fa-car text-red-500"></i>
+                    <span>Pesquisa Webmotors</span>
+                </button>
+                <button class="tab-button px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gray-100 hover:bg-gray-200" 
+                        data-tab="images">
+                    <i class="fas fa-image text-purple-500"></i>
+                    <span>Gerar Imagens</span>
+                </button>
+                <button class="tab-button px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gray-100 hover:bg-gray-200" 
+                        data-tab="documents">
+                    <i class="fas fa-file-alt text-green-500"></i>
+                    <span>Documentos</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div class="bg-white rounded-b-2xl shadow-2xl overflow-hidden">
+            
+            <!-- General Search Tab -->
+            <div id="general-tab" class="tab-content active">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-globe text-blue-500 text-xl"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Pesquisa Geral</h3>
+                            <p class="text-gray-600">Pergunte qualquer coisa - clima, notícias, receitas, história!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-container h-96 overflow-y-auto p-6 bg-gray-50" id="general-messages">
+                    <div class="chat-message flex items-start space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm max-w-lg">
+                            <p class="text-gray-800">🌍 <strong>Olá!</strong> Posso responder qualquer pergunta que você tenha. Clima, notícias, receitas, história - pergunte à vontade!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200">
+                    <div class="flex space-x-4">
+                        <input type="text" 
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                               placeholder="Pergunte qualquer coisa..."
+                               id="general-input">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="sendMessage('general')">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webmotors Search Tab -->
+            <div id="webmotors-tab" class="tab-content">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-car text-red-500 text-xl"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Pesquisa Webmotors</h3>
+                            <p class="text-gray-600">Especialista em veículos, financiamento, seguros e serviços da Webmotors</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-container h-96 overflow-y-auto p-6 bg-gray-50" id="webmotors-messages">
+                    <div class="chat-message flex items-start space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm max-w-lg">
+                            <p class="text-gray-800">🚗 <strong>Especialista em Webmotors!</strong> Posso ajudar com informações sobre compra, venda, financiamento, seguros e todos os serviços da Webmotors.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200">
+                    <div class="flex space-x-4">
+                        <input type="text" 
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500" 
+                               placeholder="Pergunte sobre veículos, financiamento, seguros..."
+                               id="webmotors-input">
+                        <button class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="sendMessage('webmotors')">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Generation Tab -->
+            <div id="images-tab" class="tab-content">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-image text-purple-500 text-xl"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Geração de Imagens</h3>
+                            <p class="text-gray-600">Crie imagens incríveis com IA - FLUX, Stable Diffusion e mais!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-container h-96 overflow-y-auto p-6 bg-gray-50" id="images-messages">
+                    <div class="chat-message flex items-start space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm max-w-lg">
+                            <p class="text-gray-800">🎨 <strong>Criador de Imagens!</strong> Descreva a imagem que você quer criar e eu vou gerar para você usando as melhores IAs disponíveis.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200">
+                    <div class="flex space-x-4">
+                        <input type="text" 
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" 
+                               placeholder="Descreva a imagem que deseja criar..."
+                               id="images-input">
+                        <button class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="generateImage()">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div id="documents-tab" class="tab-content">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file-alt text-green-500 text-xl"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Análise de Documentos</h3>
+                            <p class="text-gray-600">Upload e análise de Excel, PowerPoint, PDF, CSV e mais</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-container h-96 overflow-y-auto p-6 bg-gray-50" id="documents-messages">
+                    <div class="chat-message flex items-start space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm max-w-lg">
+                            <p class="text-gray-800">📄 <strong>Analista de Documentos!</strong> Faça upload de seus arquivos (Excel, PowerPoint, PDF) e posso analisar dados, extrair insights e responder perguntas específicas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200">
+                    <div class="flex space-x-4 mb-4">
+                        <input type="file" 
+                               class="hidden" 
+                               id="document-upload" 
+                               accept=".xlsx,.xls,.pptx,.ppt,.pdf,.csv,.txt"
+                               multiple
+                               onchange="uploadDocuments()">
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="document.getElementById('document-upload').click()">
+                            <i class="fas fa-upload mr-2"></i>Upload
+                        </button>
+                        <button class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="listDocuments()">
+                            <i class="fas fa-list mr-2"></i>Listar Docs
+                        </button>
+                    </div>
+                    <div class="flex space-x-4">
+                        <input type="text" 
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500" 
+                               placeholder="Pergunte sobre documentos ou faça upload..."
+                               id="documents-input">
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors" 
+                                onclick="sendMessage('documents')">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="bg-gray-100 px-6 py-3 rounded-b-lg">
+            <div class="flex justify-between items-center text-sm text-gray-600">
+                <div>
+                    <span id="status-text">Sistema ativo</span> | 
+                    <span id="message-count">0 mensagens</span>
+                </div>
+                <div>
+                    <span id="response-time">---</span> | 
+                    <span id="current-model">Gemini 2.5 Flash</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="image-modal">
+        <img src="" alt="Imagem ampliada" />
+        <button class="download-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg" onclick="downloadCurrentImage()">
+            <i class="fas fa-download mr-2"></i>Download
+        </button>
+    </div>
+
+    <script>
+        class WebmotorsAI {
+            constructor() {
+                this.currentTab = 'general';
+                this.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                this.serverUrl = window.location.origin;
+                this.messageCount = 0;
+                this.currentImageSrc = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupTabSwitching();
+                this.setupKeyboardEvents();
+                this.testConnection();
+                this.updateStatus('Sistema iniciando...', 'blue');
+            }
+            
+            setupTabSwitching() {
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const tabId = button.dataset.tab;
+                        
+                        // Update buttons
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        
+                        // Update content
+                        tabContents.forEach(content => content.classList.remove('active'));
+                        document.getElementById(tabId + '-tab').classList.add('active');
+                        
+                        this.currentTab = tabId;
+                        this.focusInput();
+                    });
+                });
+            }
+            
+            setupKeyboardEvents() {
+                ['general', 'webmotors', 'documents'].forEach(tab => {
+                    const input = document.getElementById(tab + '-input');
+                    if (input) {
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                this.sendMessage(tab);
+                            }
+                        });
+                    }
+                });
+                
+                const imagesInput = document.getElementById('images-input');
+                if (imagesInput) {
+                    imagesInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.generateImage();
+                        }
+                    });
+                }
+                
+                // Modal close on ESC
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeImageModal();
+                    }
+                });
+            }
+            
+            async testConnection() {
+                try {
+                    const response = await fetch(`${this.serverUrl}/health`);
+                    if (response.ok) {
+                        this.updateStatus('Conectado', 'green');
+                        this.updateConnectionStatus('Conectado', true);
+                    } else {
+                        this.updateStatus('Erro no servidor', 'red');
+                        this.updateConnectionStatus('Erro', false);
+                    }
+                } catch (error) {
+                    this.updateStatus('Desconectado', 'red');
+                    this.updateConnectionStatus('Desconectado', false);
+                }
+            }
+            
+            updateStatus(text, color) {
+                const statusText = document.getElementById('status-text');
+                if (statusText) {
+                    statusText.textContent = text;
+                    statusText.className = `text-${color}-600`;
+                }
+            }
+            
+            updateConnectionStatus(text, isConnected) {
+                const connectionStatus = document.getElementById('connection-status');
+                const indicator = document.querySelector('.status-indicator');
+                
+                if (connectionStatus) {
+                    connectionStatus.textContent = text;
+                }
+                
+                if (indicator) {
+                    indicator.className = `status-indicator w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`;
+                }
+            }
+            
+            focusInput() {
+                const input = document.getElementById(this.currentTab + '-input');
+                if (input) {
+                    input.focus();
+                }
+            }
+            
+            addMessage(tabId, content, isUser = false, metadata = null) {
+                const messagesContainer = document.getElementById(tabId + '-messages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'chat-message flex items-start space-x-3 mb-4';
+                
+                const avatarClass = isUser ? 'bg-gray-600' : this.getAvatarClass(tabId);
+                const bgClass = isUser ? 'bg-blue-500 text-white' : 'bg-white';
+                
+                let metadataHtml = '';
+                if (metadata && !isUser) {
+                    metadataHtml = `
+                        <div class="mt-2 text-xs text-gray-500 border-t pt-2">
+                            ${metadata.model ? `🤖 ${metadata.model}` : ''}
+                            ${metadata.response_time_ms ? ` ⚡ ${metadata.response_time_ms}ms` : ''}
+                            ${metadata.search_type ? ` 🎯 ${metadata.search_type}` : ''}
+                        </div>
+                    `;
+                }
+                
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 ${avatarClass} rounded-full flex items-center justify-center">
+                        <i class="fas ${isUser ? 'fa-user' : 'fa-robot'} text-white text-sm"></i>
+                    </div>
+                    <div class="${bgClass} rounded-lg p-4 shadow-sm max-w-2xl">
+                        <div class="text-gray-800 ${isUser ? 'text-white' : ''}">${this.formatMessage(content)}</div>
+                        ${metadataHtml}
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                this.messageCount++;
+                this.updateMessageCount();
+            }
+            
+            getAvatarClass(tabId) {
+                const classes = {
+                    'general': 'bg-blue-500',
+                    'webmotors': 'bg-red-500',
+                    'images': 'bg-purple-500',
+                    'documents': 'bg-green-500'
+                };
+                return classes[tabId] || 'bg-gray-500';
+            }
+            
+            formatMessage(message) {
+                // Convert markdown-like formatting
+                let formatted = message
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
+                
+                // Handle images
+                const base64ImageRegex = /!\[([^\]]*)\]\(data:image\/[^;]+;base64,([^)]+)\)/g;
+                formatted = formatted.replace(base64ImageRegex, (match, alt, base64) => {
+                    const imageId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                    return `<img src="data:image/png;base64,${base64}" alt="${alt}" class="message-img rounded-lg shadow-lg max-w-full h-auto mt-2" onclick="openImageModal(this)" id="${imageId}" />`;
+                });
+                
+                // Handle links
+                formatted = formatted.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-500 hover:underline">$1</a>');
+                
+                // Handle line breaks
+                formatted = formatted.replace(/\n/g, '<br>');
+                
+                return formatted;
+            }
+            
+            addLoadingMessage(tabId, text = 'Processando...') {
+                const loadingId = 'loading-' + Date.now();
+                const messagesContainer = document.getElementById(tabId + '-messages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'chat-message flex items-start space-x-3 mb-4';
+                messageDiv.id = loadingId;
+                
+                const avatarClass = this.getAvatarClass(tabId);
+                
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 ${avatarClass} rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-sm"></i>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 shadow-sm max-w-lg">
+                        <div class="flex items-center space-x-2">
+                            <div class="typing-indicator"></div>
+                            <div class="typing-indicator"></div>
+                            <div class="typing-indicator"></div>
+                            <span class="text-gray-600 ml-2">${text}</span>
+                        </div>
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                return loadingId;
+            }
+            
+            removeLoadingMessage(loadingId) {
+                const element = document.getElementById(loadingId);
+                if (element) {
+                    element.remove();
+                }
+            }
+            
+            async sendMessage(tabId) {
+                const input = document.getElementById(tabId + '-input');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message
+                this.addMessage(tabId, message, true);
+                input.value = '';
+                
+                // Add loading message
+                const loadingTexts = {
+                    'general': '🌐 Pesquisando na internet...',
+                    'webmotors': '🚗 Consultando site da Webmotors...',
+                    'documents': '📄 Analisando documentos...'
+                };
+                
+                const loadingId = this.addLoadingMessage(tabId, loadingTexts[tabId]);
+                
+                try {
+                    const endpoint = tabId === 'general' ? '/chat/general' : 
+                                   tabId === 'webmotors' ? '/chat/webmotors' : 
+                                   '/chat/documents';
+                    
+                    const response = await fetch(`${this.serverUrl}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: message,
+                            user_id: this.userId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    this.removeLoadingMessage(loadingId);
+                    
+                    if (data.status === 'success') {
+                        this.addMessage(tabId, data.message, false, data.metadata);
+                        this.updateResponseTime(data.metadata?.response_time_ms);
+                        this.updateCurrentModel(data.metadata?.model);
+                    } else {
+                        this.addMessage(tabId, `❌ Erro: ${data.error || data.message}`, false);
+                    }
+                    
+                } catch (error) {
+                    this.removeLoadingMessage(loadingId);
+                    this.addMessage(tabId, `❌ Erro de conexão: ${error.message}`, false);
+                }
+            }
+            
+            async generateImage() {
+                const input = document.getElementById('images-input');
+                const prompt = input.value.trim();
+                
+                if (!prompt) return;
+                
+                // Add user message
+                this.addMessage('images', `🎨 Gerar imagem: "${prompt}"`, true);
+                input.value = '';
+                
+                // Add loading message
+                const loadingId = this.addLoadingMessage('images', '🎨 Gerando imagem com IA...');
+                
+                try {
+                    const response = await fetch(`${this.serverUrl}/generate-image`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            user_id: this.userId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    this.removeLoadingMessage(loadingId);
+                    
+                    if (data.status === 'success') {
+                        this.addMessage('images', data.message, false, data.metadata);
+                        this.updateResponseTime(data.metadata?.response_time_ms);
+                    } else {
+                        this.addMessage('images', `❌ Erro: ${data.error}`, false);
+                    }
+                    
+                } catch (error) {
+                    this.removeLoadingMessage(loadingId);
+                    this.addMessage('images', `❌ Erro de conexão: ${error.message}`, false);
+                }
+            }
+            
+            async uploadDocuments() {
+                const fileInput = document.getElementById('document-upload');
+                const files = fileInput.files;
+                
+                if (files.length === 0) return;
+                
+                for (let file of files) {
+                    const loadingId = this.addLoadingMessage('documents', `📄 Carregando ${file.name}...`);
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        const response = await fetch(`${this.serverUrl}/upload-document`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        this.removeLoadingMessage(loadingId);
+                        
+                        if (data.status === 'success') {
+                            this.addMessage('documents', data.message, false, data.metadata);
+                        } else {
+                            this.addMessage('documents', `❌ Erro ao carregar ${file.name}: ${data.error}`, false);
+                        }
+                        
+                    } catch (error) {
+                        this.removeLoadingMessage(loadingId);
+                        this.addMessage('documents', `❌ Erro no upload de ${file.name}: ${error.message}`, false);
+                    }
+                }
+                
+                fileInput.value = '';
+            }
+            
+            async listDocuments() {
+                const loadingId = this.addLoadingMessage('documents', '📄 Listando documentos...');
+                
+                try {
+                    const response = await fetch(`${this.serverUrl}/list-documents`);
+                    const data = await response.json();
+                    
+                    this.removeLoadingMessage(loadingId);
+                    
+                    if (data.status === 'success') {
+                        this.addMessage('documents', data.message, false, data.metadata);
+                    } else {
+                        this.addMessage('documents', `❌ Erro: ${data.error}`, false);
+                    }
+                    
+                } catch (error) {
+                    this.removeLoadingMessage(loadingId);
+                    this.addMessage('documents', `❌ Erro de conexão: ${error.message}`, false);
+                }
+            }
+            
+            updateMessageCount() {
+                const messageCountEl = document.getElementById('message-count');
+                if (messageCountEl) {
+                    messageCountEl.textContent = `${this.messageCount} mensagens`;
+                }
+            }
+            
+            updateResponseTime(timeMs) {
+                const responseTimeEl = document.getElementById('response-time');
+                if (responseTimeEl && timeMs) {
+                    responseTimeEl.textContent = `${timeMs}ms`;
+                }
+            }
+            
+            updateCurrentModel(model) {
+                const currentModelEl = document.getElementById('current-model');
+                if (currentModelEl && model) {
+                    currentModelEl.textContent = model;
+                }
+            }
+            
+            openImageModal(imgElement) {
+                const modal = document.getElementById('image-modal');
+                const modalImg = modal.querySelector('img');
+                
+                modalImg.src = imgElement.src;
+                modalImg.alt = imgElement.alt;
+                modal.style.display = 'block';
+                
+                this.currentImageSrc = imgElement.src;
+                
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        this.closeImageModal();
+                    }
+                };
+            }
+            
+            closeImageModal() {
+                const modal = document.getElementById('image-modal');
+                modal.style.display = 'none';
+            }
+            
+            downloadCurrentImage() {
+                if (this.currentImageSrc) {
+                    const link = document.createElement('a');
+                    link.href = this.currentImageSrc;
+                    link.download = `webmotors_ai_${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    this.closeImageModal();
+                }
+            }
+        }
+        
+        // Global functions for backward compatibility
+        function sendMessage(tabId) {
+            webmotorsApp.sendMessage(tabId);
+        }
+        
+        function generateImage() {
+            webmotorsApp.generateImage();
+        }
+        
+        function uploadDocuments() {
+            webmotorsApp.uploadDocuments();
+        }
+        
+        function listDocuments() {
+            webmotorsApp.listDocuments();
+        }
+        
+        function openImageModal(imgElement) {
+            webmotorsApp.openImageModal(imgElement);
+        }
+        
+        function downloadCurrentImage() {
+            webmotorsApp.downloadCurrentImage();
+        }
+        
+        // Initialize app
+        const webmotorsApp = new WebmotorsAI();
+        
+        console.log('🚗 Webmotors AI Interface Carregada!');
+        console.log('✅ Sistema de abas funcionando');
+        console.log('✅ Todas as funcionalidades ativas');
+    </script>
+</body>
+</html>

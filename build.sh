@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-# Instalar dependências do sistema necessárias para Pillow e outras bibliotecas
-# que compilam extensões C
-echo "Atualizando pacotes e instalando dependências do sistema..."
-apt-get update && apt-get install -y \
+echo "Limpando cache do apt e atualizando pacotes..."
+# Tente limpar o cache antes de atualizar
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+apt-get update --fix-missing
+
+# Instalar dependências do sistema...
+apt-get install -y \
     build-essential \
     zlib1g-dev \
     libjpeg-dev \
@@ -17,7 +21,6 @@ apt-get update && apt-get install -y \
     python3-tk \
     pkg-config
 
-# Agora instalar as dependências Python
 echo "Instalando dependências Python do requirements.txt..."
 pip install -r requirements.txt
 
